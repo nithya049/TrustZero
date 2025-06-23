@@ -12,6 +12,13 @@ def load_file(path):
             json.dump({}, f)
     with open(path, 'r') as f:
         return json.load(f)
+    
+    if not os.path.exists(path) or os.path.getsize(path) == 0:
+        with open(path, "w") as f:
+            f.write("{}")
+    with open(path, "r") as f:
+        return json.load(f)
+
 
 def save_file(path, data):
     with open(path, 'w') as f:
@@ -19,29 +26,31 @@ def save_file(path, data):
 
 @app.route("/validate_token", methods=["POST"])
 def validate_token():
-    data = request.json
+    data = request.get_json()
     token = data.get("token")
     uuid = data.get("uuid")
 
-    tokens = load_file(TOKENS_FILE)
-    uuids = load_file(UUIDS_FILE)
+    # Load tokens file
+    if not os.path.exists("tokens.json"):
+        return jsonify({"status": "error", "reason": "Token store missing"}), 500
+
+    with open("tokens.json", "r") as f:
+        tokens = json.load(f)
 
     if token not in tokens:
-        return jsonify({"status": "invalid", "reason": "token not found"})
-    if tokens[token]['used']:
-        if uuids.get(token) == uuid:
-            return jsonify({"status": "ok", "message": "already registered on this device"})
-        else:
-            return jsonify({"status": "invalid", "reason": "token already used on another device"})
+        return jsonify({"status": "error", "reason": "Invalid token"}), 403
 
-    # Mark token as used and store UUID
-    tokens[token]['used'] = True
-    uuids[token] = uuid
+    if tokens[token].get("used", False):
+        return jsonify({"status": "error", "reason": "Token already used"}), 403
 
-    save_file(TOKENS_FILE, tokens)
-    save_file(UUIDS_FILE, uuids)
+    # Mark token as used
+    tokens[token]["used"] = True
+    tokens[token]["uuid"] = uuid
 
-    return jsonify({"status": "ok"})
+    with open("tokens.json", "w") as f:
+        json.dump(tokens, f, indent=2)
+
+    return jsonify({"status": "ok"}), 200
 
 @app.route("/status/<token>")
 def status(token):

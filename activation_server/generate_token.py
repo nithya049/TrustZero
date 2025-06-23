@@ -7,7 +7,7 @@ def generate_token():
            "".join(random.choices(string.ascii_uppercase + string.digits, k=4))
 
 def add_token(email):
-    if not os.path.exists(TOKENS_FILE):
+    if not os.path.exists(TOKENS_FILE) or os.path.getsize(TOKENS_FILE) == 0:
         with open(TOKENS_FILE, 'w') as f:
             json.dump({}, f)
 
@@ -21,6 +21,7 @@ def add_token(email):
         json.dump(tokens, f, indent=2)
 
     print(f"Token for {email}: {new_token}")
+
 
 if __name__ == '__main__':
     email = input("Enter recipient email: ")
