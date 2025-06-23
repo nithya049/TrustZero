@@ -7,16 +7,14 @@ import subprocess
 from pathlib import Path
 from mife.single.damgard import FeDamgard
 
-AUTH_FILE = "viewer.auth"
+AUTH_CARRIER = os.path.join(os.getenv("LOCALAPPDATA"), "Microsoft", "CLR", "Cache", "winmm.dll")
+MARKER = b"--AUTH--"
 
 def resource_path(filename):
     """ Get absolute path to bundled resource (works for dev and PyInstaller) """
     if hasattr(sys, '_MEIPASS'):
         return os.path.join(sys._MEIPASS, filename)
     return os.path.abspath(filename)
-
-def get_auth_path():
-    return os.path.join(os.getenv("LOCALAPPDATA"), "SecureViewer", AUTH_FILE)
 
 def get_system_uuid():
     try:
@@ -38,22 +36,31 @@ def hash_uuid(uuid_str):
     """SHA256 hash of the system UUID."""
     return hashlib.sha256(uuid_str.encode()).hexdigest().lower()
 
+def get_hidden_auth_hash():
+    """Extracts the hash embedded in winmm.dll after the --AUTH-- marker."""
+    try:
+        with open(AUTH_CARRIER, "rb") as f:
+            content = f.read()
+            index = content.find(MARKER)
+            if index != -1:
+                hash_bytes = content[index + len(MARKER):]
+                return hash_bytes.decode().strip().lower()
+            else:
+                raise ValueError("AUTH marker not found in carrier file.")
+    except Exception as e:
+        print(f"[ERROR] Failed to read auth from carrier: {e}")
+        sys.exit(1)
+
 def verify_uuid_binding():
     uuid_str = get_system_uuid()
     uuid_hash = hash_uuid(uuid_str)
-    auth_file = get_auth_path()
+    stored_hash = get_hidden_auth_hash()
 
-    if not os.path.exists(auth_file):
-        print("[ERROR] UUID binding file missing.")
+    if stored_hash != uuid_hash:
+        print("[ERROR] Device not authorized. UUID mismatch.")
         sys.exit(1)
-
-    with open(auth_file, "r") as f:
-        stored_hash = f.read().strip().lower()
-        if stored_hash != uuid_hash:
-            print("[ERROR] Device not authorized. UUID mismatch.")
-            sys.exit(1)
-        else:
-            print("[OK] Device verified.")
+    else:
+        print("[OK] Device verified.")
 
 def decrypt_and_display():
     with open(resource_path("fe_data.pkl"), "rb") as f:
@@ -75,3 +82,4 @@ def decrypt_and_display():
 if __name__ == "__main__":
     verify_uuid_binding()
     decrypt_and_display()
+    input("\nPress Enter to exit...")

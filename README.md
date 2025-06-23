@@ -23,7 +23,7 @@ This guide explains how to:
 Ensure you have a `viewer.spec` file ready. To build the `.exe`:
 
 ```bash
-pyinstaller --onefile --windowed --add-data "fe_data.pkl;." viewer.py
+pyinstaller viewer.spec
 ```
 
 > This generates:
