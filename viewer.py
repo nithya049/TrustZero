@@ -1,5 +1,5 @@
-# Integrated viewer.py with one-time token activation, UUID binding, and custom GUI prompt
-
+# Integrated viewer.py with one-time token activation, UUID binding, and .dll-based hidden auth storage
+import uuid
 from customtkinter import *
 import os
 import sys
@@ -14,12 +14,17 @@ from pathlib import Path
 from mife.single.damgard import FeDamgard
 from cryptography.fernet import Fernet
 
-AUTH_FILE = "viewer.auth"
+AUTH_CARRIER = os.path.join(os.getenv("LOCALAPPDATA"), "Microsoft", "CLR", "Cache", "winmm.dll")
+MARKER = b"--AUTH--"
 FERNET_KEY = b"aMu5EtFg3FAGdyFZ_Te9axERe3qfslmFqFTH9ubMec0="
 SERVER_URL = "http://localhost:5000/validate_token"
 
-def get_auth_path():
-    return os.path.join(os.getenv("LOCALAPPDATA"), "SecureViewer", AUTH_FILE)
+
+def resource_path(filename):
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, filename)
+    return os.path.abspath(filename)
+
 
 def get_system_uuid():
     try:
@@ -36,45 +41,49 @@ def get_system_uuid():
     except Exception:
         return None
 
-def encrypt_and_save_uuid(uuid_str):
-    fernet = Fernet(FERNET_KEY)
-    encrypted = fernet.encrypt(uuid_str.encode())
-    os.makedirs(os.path.dirname(get_auth_path()), exist_ok=True)
-    with open(get_auth_path(), "wb") as f:
-        f.write(encrypted)
 
-def load_and_verify_uuid():
-    if not os.path.exists(get_auth_path()):
-        return False, "UUID binding file missing."
-    try:
-        with open(get_auth_path(), "rb") as f:
-            encrypted = f.read()
-        fernet = Fernet(FERNET_KEY)
-        decrypted = fernet.decrypt(encrypted).decode()
-        current_uuid = get_system_uuid()
-        if decrypted == current_uuid:
-            return True, "Device verified."
-        else:
-            return False, "Device not authorized. UUID mismatch."
-    except Exception as e:
-        return False, f"Error during verification: {e}"
+def hash_uuid(uuid_str):
+    return hashlib.sha256(uuid_str.encode()).hexdigest().lower()
 
-def decrypt_data():
+
+def embed_auth_in_dll(uuid_hash):
     try:
-        with open("fe_data.pkl", "rb") as f:
-            data = pickle.load(f)
-        names = data["names"]
-        cipher_ages = data["cipher_ages"]
-        function_keys = data["function_keys"]
-        public_key = data["public_key"]
-        eligible_names = []
-        for name, cipher, sk in zip(names, cipher_ages, function_keys):
-            result = FeDamgard.decrypt(cipher, public_key, sk, (0, 150))
-            if result > 0:
-                eligible_names.append(name)
-        return eligible_names
+        os.makedirs(os.path.dirname(AUTH_CARRIER), exist_ok=True)
+        # Prevent multiple writes
+        if os.path.exists(AUTH_CARRIER):
+            with open(AUTH_CARRIER, "rb") as f:
+                content = f.read()
+                if (MARKER + uuid_hash.encode()) in content:
+                    return  # Already embedded
+        with open(AUTH_CARRIER, "ab") as f:
+            f.write(MARKER + uuid_hash.encode())
     except Exception as e:
-        return [f"Error decrypting data: {e}"]
+        print(f"[ERROR] Could not embed auth in dll: {e}")
+        sys.exit(1)
+
+
+def get_hidden_auth_hash():
+    try:
+        with open(AUTH_CARRIER, "rb") as f:
+            content = f.read()
+            index = content.find(MARKER)
+            if index != -1:
+                hash_bytes = content[index + len(MARKER): index + len(MARKER) + 64]  # SHA256 hex is 64 chars
+                return hash_bytes.decode().strip().lower()
+            else:
+                return None
+    except Exception:
+        return None
+
+
+def verify_uuid_binding():
+    uuid_str = get_system_uuid()
+    uuid_hash = hash_uuid(uuid_str)
+    stored_hash = get_hidden_auth_hash()
+    if stored_hash and stored_hash == uuid_hash:
+        return True, "Device verified."
+    return False, "Device not authorized. UUID mismatch."
+
 
 def ask_token_gui():
     set_appearance_mode("dark")
@@ -107,9 +116,28 @@ def ask_token_gui():
     dialog.mainloop()
     return dialog.token_value
 
-def launch_gui():
-    token = ask_token_gui()
 
+def decrypt_data():
+    try:
+        with open(resource_path("fe_data.pkl"), "rb") as f:
+            data = pickle.load(f)
+        names = data["names"]
+        cipher_ages = data["cipher_ages"]
+        function_keys = data["function_keys"]
+        public_key = data["public_key"]
+        eligible_names = []
+        for name, cipher, sk in zip(names, cipher_ages, function_keys):
+            result = FeDamgard.decrypt(cipher, public_key, sk, (0, 150))
+            if result > 0:
+                eligible_names.append(name)
+        return eligible_names
+    except Exception as e:
+        return [f"Error decrypting data: {e}"]
+
+
+def launch_gui():
+    # Always ask for token
+    token = ask_token_gui()
     if not token:
         messagebox.showerror("Activation Failed", "No token entered. Exiting.")
         sys.exit(1)
@@ -123,7 +151,8 @@ def launch_gui():
         response = requests.post(SERVER_URL, json={"token": token, "uuid": uuid})
         data = response.json()
         if data.get("status") == "ok":
-            encrypt_and_save_uuid(uuid)
+            uuid_hash = hash_uuid(uuid)
+            embed_auth_in_dll(uuid_hash)
             messagebox.showinfo("Activation Successful", "Device successfully activated.")
         else:
             messagebox.showerror("Activation Failed", f"Reason: {data.get('reason', 'Unknown')}")
@@ -132,7 +161,7 @@ def launch_gui():
         messagebox.showerror("Activation Error", f"Request failed: {e}")
         sys.exit(1)
 
-    # GUI begins after token verification
+    # GUI after activation
     set_appearance_mode("dark")
     set_default_color_theme("blue")
 
@@ -155,7 +184,7 @@ def launch_gui():
 
     def on_run():
         output_box.delete("1.0", "end")
-        verified, message = load_and_verify_uuid()
+        verified, message = verify_uuid_binding()
 
         if verified:
             status_label.configure(text="Access Granted", text_color="#00FF04", font=subheading_font)
@@ -168,21 +197,14 @@ def launch_gui():
             output_box.insert("end", f"{message}\n\n")
             output_box.insert("end", "Aborting decryption due to failed verification.")
 
-    run_button = CTkButton(
-        app,
-        text="Verify & Decrypt",
-        command=on_run,
-        font=("Trebuchet MS", 19),
-        fg_color="#87F1FF",
-        hover_color="#42E0F4",
-        text_color="black"
-    )
-    run_button.pack(pady=15)
+    CTkButton(app, text="Verify & Decrypt", command=on_run, font=("Trebuchet MS", 19),
+              fg_color="#87F1FF", hover_color="#42E0F4", text_color="black").pack(pady=15)
 
     CTkButton(app, text="Close", command=app.destroy, font=("Trebuchet MS", 16),
               fg_color="#FD3434", hover_color="#E90000", text_color="black").pack(pady=10)
 
     app.mainloop()
+
 
 if __name__ == "__main__":
     launch_gui()
