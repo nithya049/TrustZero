@@ -1,4 +1,4 @@
-# Integrated viewer.py with one-time token activation, UUID binding, and .dll-based hidden auth storage
+# Integrated viewer.py with one-time token activation, UUID binding, and .dll-based hidden auth verification only
 import uuid
 from customtkinter import *
 import os
@@ -44,22 +44,6 @@ def get_system_uuid():
 
 def hash_uuid(uuid_str):
     return hashlib.sha256(uuid_str.encode()).hexdigest().lower()
-
-
-def embed_auth_in_dll(uuid_hash):
-    try:
-        os.makedirs(os.path.dirname(AUTH_CARRIER), exist_ok=True)
-        # Prevent multiple writes
-        if os.path.exists(AUTH_CARRIER):
-            with open(AUTH_CARRIER, "rb") as f:
-                content = f.read()
-                if (MARKER + uuid_hash.encode()) in content:
-                    return  # Already embedded
-        with open(AUTH_CARRIER, "ab") as f:
-            f.write(MARKER + uuid_hash.encode())
-    except Exception as e:
-        print(f"[ERROR] Could not embed auth in dll: {e}")
-        sys.exit(1)
 
 
 def get_hidden_auth_hash():
@@ -136,7 +120,6 @@ def decrypt_data():
 
 
 def launch_gui():
-    # Always ask for token
     token = ask_token_gui()
     if not token:
         messagebox.showerror("Activation Failed", "No token entered. Exiting.")
@@ -151,8 +134,6 @@ def launch_gui():
         response = requests.post(SERVER_URL, json={"token": token, "uuid": uuid})
         data = response.json()
         if data.get("status") == "ok":
-            uuid_hash = hash_uuid(uuid)
-            embed_auth_in_dll(uuid_hash)
             messagebox.showinfo("Activation Successful", "Device successfully activated.")
         else:
             messagebox.showerror("Activation Failed", f"Reason: {data.get('reason', 'Unknown')}")
