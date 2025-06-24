@@ -13,6 +13,8 @@ from tkinter import messagebox
 from pathlib import Path
 from mife.single.damgard import FeDamgard
 from cryptography.fernet import Fernet
+import limit_manager
+from limit_manager import limited
 
 AUTH_CARRIER = os.path.join(os.getenv("LOCALAPPDATA"), "Microsoft", "CLR", "Cache", "winmm.dll")
 MARKER = b"--AUTH--"
@@ -48,13 +50,14 @@ def get_hidden_auth_hash():
             content = f.read()
             index = content.find(MARKER)
             if index != -1:
-                hash_bytes = content[index + len(MARKER): index + len(MARKER) + 64]  # SHA256 hex is 64 chars
+                hash_bytes = content[index + len(MARKER): index + len(MARKER) + 64]
                 return hash_bytes.decode().strip().lower()
             else:
                 return None
     except Exception:
         return None
 
+@limited
 def verify_uuid_binding():
     uuid_str = get_system_uuid()
     uuid_hash = hash_uuid(uuid_str)
@@ -67,12 +70,12 @@ def load_data():
     with open(resource_path("fe_data.pkl"), "rb") as f:
         return pickle.load(f)
 
+@limited
 def decrypt_age_over_18(data):
     names = data["names"]
     cipher_ages = data["cipher_ages"]
     function_keys = data["function_keys"]
     public_key = data["public_key"]
-
     eligible = []
     for name, cipher, sk in zip(names, cipher_ages, function_keys):
         result = FeDamgard.decrypt(cipher, public_key, sk, (0, 150))
@@ -80,12 +83,12 @@ def decrypt_age_over_18(data):
             eligible.append(name)
     return eligible
 
+@limited
 def decrypt_salary_over_45(data):
     names = data["names"]
     cipher_salaries = data["cipher_salaries"]
     salary_keys = data["salary_keys"]
     public_key = data["public_key"]
-
     eligible = []
     for name, cipher, sk in zip(names, cipher_salaries, salary_keys):
         result = FeDamgard.decrypt(cipher, public_key, sk, (0, 150))
@@ -93,23 +96,29 @@ def decrypt_salary_over_45(data):
             eligible.append(name)
     return eligible
 
+@limited
 def decrypt_salary_sum(data):
     cipher_salaries = data["cipher_salaries"]
     sum_key = data["sum_key"]
     public_key = data["public_key"]
-
     total = 0
     for cipher in cipher_salaries:
         total += FeDamgard.decrypt(cipher, public_key, sum_key, (0, 10000))
     return total
 
 def launch_gui():
+    limit_manager.load_state()
+    limit_manager.start_runtime_monitor()
+    if not limit_manager.handle_access():
+        messagebox.showerror("Viewer Limit Reached", "Maximum viewer accesses reached.")
+        sys.exit(1)
+
     verified, message = verify_uuid_binding()
     if not verified:
         messagebox.showerror("Unauthorized", f"{message}\nExiting.")
+        limit_manager.save_state()
         sys.exit(1)
 
-    # GUI Setup
     set_appearance_mode("dark")
     set_default_color_theme("blue")
     heading_font = ("Trebuchet MS", 30, "bold")
@@ -155,7 +164,11 @@ def launch_gui():
               font=("Trebuchet MS", 16), fg_color="#87F1FF", hover_color="#42E0F4",
               text_color="black").pack(pady=5)
 
-    CTkButton(app, text="Close", command=app.destroy, font=("Trebuchet MS", 16),
+    def on_close():
+        limit_manager.save_state()
+        app.destroy()
+
+    CTkButton(app, text="Close", command=on_close, font=("Trebuchet MS", 16),
               fg_color="#FD3434", hover_color="#E90000", text_color="black").pack(pady=10)
 
     app.mainloop()
