@@ -27,7 +27,7 @@ def save_file(path, data):
 @app.route("/validate_token", methods=["POST"])
 def validate_token():
     data = request.get_json()
-    token = data.get("token")
+    token = data.get("token", "").strip().upper()
     uuid = data.get("uuid")
 
     # Load tokens file
