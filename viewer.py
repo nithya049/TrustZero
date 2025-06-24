@@ -63,36 +63,6 @@ def verify_uuid_binding():
         return True, "Device verified."
     return False, "Device not authorized. UUID mismatch."
 
-def ask_token_gui():
-    set_appearance_mode("dark")
-    set_default_color_theme("blue")
-
-    class TokenDialog(CTk):
-        def __init__(self):
-            super().__init__()
-            self.title("Enter Activation Token")
-            self.geometry("400x200")
-            self.resizable(False, False)
-            self.token_value = None
-
-            CTkLabel(self, text="Activation Required", font=("Trebuchet MS", 22, "bold")).pack(pady=(20, 10))
-            CTkLabel(self, text="Enter your one-time activation token:", font=("Trebuchet MS", 15)).pack(pady=(0, 5))
-
-            self.entry = CTkEntry(self, width=300, font=("Trebuchet MS", 14))
-            self.entry.pack(pady=(0, 15))
-            self.entry.focus()
-
-            CTkButton(self, text="Submit", command=self.submit_token, font=("Trebuchet MS", 14),
-                      fg_color="#87F1FF", hover_color="#42E0F4", text_color="black").pack(pady=10)
-
-        def submit_token(self):
-            self.token_value = self.entry.get()
-            self.destroy()
-
-    dialog = TokenDialog()
-    dialog.mainloop()
-    return dialog.token_value
-
 def load_data():
     with open(resource_path("fe_data.pkl"), "rb") as f:
         return pickle.load(f)
@@ -134,26 +104,9 @@ def decrypt_salary_sum(data):
     return total
 
 def launch_gui():
-    token = ask_token_gui()
-    if not token:
-        messagebox.showerror("Activation Failed", "No token entered. Exiting.")
-        sys.exit(1)
-
-    uuid = get_system_uuid()
-    if not uuid:
-        messagebox.showerror("Activation Failed", "Could not retrieve device UUID.")
-        sys.exit(1)
-
-    try:
-        response = requests.post(SERVER_URL, json={"token": token, "uuid": uuid})
-        data = response.json()
-        if data.get("status") != "ok":
-            messagebox.showerror("Activation Failed", f"Reason: {data.get('reason', 'Unknown')}")
-            sys.exit(1)
-        else:
-            messagebox.showinfo("Activation Successful", "Device successfully activated.")
-    except Exception as e:
-        messagebox.showerror("Activation Error", f"Request failed: {e}")
+    verified, message = verify_uuid_binding()
+    if not verified:
+        messagebox.showerror("Unauthorized", f"{message}\nExiting.")
         sys.exit(1)
 
     # GUI Setup
