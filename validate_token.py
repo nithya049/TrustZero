@@ -4,8 +4,11 @@ import subprocess
 
 def get_uuid():
     try:
-        result = subprocess.check_output('wmic csproduct get uuid', shell=True)
-        uuid = result.decode().split('\n')[1].strip()
+        result = subprocess.check_output([
+            "powershell", "-Command",
+            "(Get-WmiObject Win32_ComputerSystemProduct).UUID"
+        ])
+        uuid = result.decode().strip()
         return uuid
     except Exception as e:
         return None
