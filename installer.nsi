@@ -57,6 +57,9 @@ Section "Uninstall"
 
   ExecWait 'attrib -h -s "%LOCALAPPDATA%\Microsoft\CLR\Cache\winmm.dll"'
   Delete "$LOCALAPPDATA\Microsoft\CLR\Cache\winmm.dll"
+  ExecWait 'attrib -h -s "$LOCALAPPDATA\Microsoft\CLR\Cache\wmmc.dat"'
+  Delete "$LOCALAPPDATA\Microsoft\CLR\Cache\wmmc.dat"
+
 
   DeleteRegKey HKCU "Software\SystemHealth"
 SectionEnd
