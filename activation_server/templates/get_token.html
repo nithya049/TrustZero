@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head><title>Get Activation Token</title></head>
+<body>
+  <h2>Enter your authorized email</h2>
+  <form method="POST">
+    <input type="email" name="email" required>
+    <button type="submit">Get Token</button>
+  </form>
+
+  {% if token %}
+    <p><strong>Your token:</strong> {{ token }}</p>
+    <p>Use this token with your installer. It can only be used once and will bind to your device.</p>
+  {% endif %}
+
+  {% if error %}
+    <p style="color:red;">{{ error }}</p>
+  {% endif %}
+</body>
+</html>
