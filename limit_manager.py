@@ -74,14 +74,26 @@ def save_state():
         print(f"[ERROR] Failed to save limit state: {e}")
 
 # === Runtime Monitor ===
+import ctypes  # Already imported in your code
+
 def _runtime_monitor():
     while True:
         elapsed = time.time() - START_TIME
         if elapsed > MAX_VIEWER_SECONDS:
             print("[LIMIT] Viewer runtime exceeded. Exiting.")
             save_state()
-            sys.exit(1)
+
+            # Show native Windows MessageBox
+            ctypes.windll.user32.MessageBoxW(
+                0,
+                "Your time is up. Secure Viewer will now close.",
+                "Time Limit Reached",
+                0x10  # MB_ICONERROR
+            )
+
+            os._exit(1)  # Forcefully exit app
         time.sleep(5)
+
 
 def start_runtime_monitor():
     threading.Thread(target=_runtime_monitor, daemon=True).start()
