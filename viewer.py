@@ -122,20 +122,28 @@ def launch_gui():
         sys.exit(1)
 
     set_appearance_mode("dark")
-    set_default_color_theme("blue")
-    heading_font = ("Trebuchet MS", 30, "bold")
-    subheading_font = ("Trebuchet MS", 20)
-    text_font = ("Trebuchet MS", 16)
+    set_default_color_theme("green")
+
+    heading_font = ("Courier New", 26, "bold")
+    subheading_font = ("Courier New", 18)
+    text_font = ("Courier New", 14)
 
     app = CTk()
     app.title("Secure Viewer")
-    app.geometry("600x540")
+    app.geometry("700x720")
+    app.configure(fg_color="#1b1e1c")
 
-    CTkLabel(app, text="Secure Viewer", font=heading_font, text_color="#A9F3FD").pack(pady=20)
-    output_box = CTkTextbox(app, width=500, height=200, font=text_font, wrap="word")
+    frame = CTkFrame(app, fg_color="#21241e", border_color="#4a5035", border_width=1, corner_radius=12)
+    frame.place(relx=0.5, rely=0.5, anchor="center", relwidth=0.85, relheight=0.9)
+
+    CTkLabel(frame, text="SECURE ACCESS INTERFACE", font=heading_font, text_color="#a9c386").pack(pady=(20, 10))
+
+    output_box = CTkTextbox(frame, width=580, height=220, font=text_font, wrap="word",
+                            text_color="#d6d6d6", fg_color="#2a2e27", border_color="#3d4236", border_width=1)
     output_box.pack(pady=10)
-    status_label = CTkLabel(app, text="", font=subheading_font)
-    status_label.pack(pady=(5, 0))
+
+    status_label = CTkLabel(frame, text="", font=subheading_font, text_color="#90ee90")
+    status_label.pack(pady=(5, 15))
 
     data = load_data()
 
@@ -143,7 +151,7 @@ def launch_gui():
         output_box.delete("1.0", "end")
         verified, message = verify_uuid_binding()
         if verified:
-            status_label.configure(text="Access Granted", text_color="#00FF04", font=subheading_font)
+            status_label.configure(text="Access Granted", text_color="#00FF04")
             result = decrypt_func(data)
             output_box.insert("end", f"{message}\n\n{label}\n")
             if isinstance(result, list):
@@ -154,29 +162,27 @@ def launch_gui():
             status_label.configure(text="Access Denied", text_color="#FF2B2B", font=subheading_font)
             output_box.insert("end", f"{message}\n\nAborting decryption due to failed verification.")
 
-        CTkButton(app, text="Total Casualties", command=lambda: run_decrypt(decrypt_total_casualties, "Total Casualties:"),
-              font=("Trebuchet MS", 16), fg_color="#87F1FF", hover_color="#42E0F4", text_color="black").pack(pady=5)
+    button_style = {
+        "font": text_font,
+        "fg_color": "#90ee90",
+        "hover_color": "#66e966",
+        "text_color": "#1e241a",
+        "width": 200,
+        "corner_radius": 8
+    }
 
-    CTkButton(app, text="Total Supply Used", command=lambda: run_decrypt(decrypt_total_supplies, "Total Fuel & Ammo Used (L):"),
-              font=("Trebuchet MS", 16), fg_color="#87F1FF", hover_color="#42E0F4", text_color="black").pack(pady=5)
+    CTkButton(frame, text="Total Casualties", command=lambda: run_decrypt(decrypt_total_casualties, "Total Casualties:"), **button_style).pack(pady=5)
+    CTkButton(frame, text="Total Supply Used", command=lambda: run_decrypt(decrypt_total_supplies, "Total Fuel & Ammo Used (L):"), **button_style).pack(pady=5)
+    CTkButton(frame, text="Total Enemy Sightings", command=lambda: run_decrypt(decrypt_total_enemy_sightings, "Total Enemy Sightings:"), **button_style).pack(pady=5)
+    CTkButton(frame, text="Average Success Rating", command=lambda: run_decrypt(decrypt_avg_success_rating, "Average Mission Success (%):"), **button_style).pack(pady=5)
+    CTkButton(frame, text="Comms Disrupted", command=lambda: run_decrypt(decrypt_comm_disrupted, "Missions with Comm Disruption (UnitIDs):"),
+              font=text_font, fg_color="#FECF6A", hover_color="#F4A700", text_color="#1e241a", width=200).pack(pady=5)
 
-    CTkButton(app, text="Total Enemy Sightings", command=lambda: run_decrypt(decrypt_total_enemy_sightings, "Total Enemy Sightings:"),
-              font=("Trebuchet MS", 16), fg_color="#87F1FF", hover_color="#42E0F4", text_color="black").pack(pady=5)
-
-    CTkButton(app, text="Average Success Rating", command=lambda: run_decrypt(decrypt_avg_success_rating, "Average Mission Success (%):"),
-              font=("Trebuchet MS", 16), fg_color="#87F1FF", hover_color="#42E0F4", text_color="black").pack(pady=5)
-
-    CTkButton(app, text="Comms Disrupted", command=lambda: run_decrypt(decrypt_comm_disrupted, "Missions with Comm Disruption (UnitIDs):"),
-              font=("Trebuchet MS", 16), fg_color="#FECF6A", hover_color="#F4A700", text_color="black").pack(pady=5)
-
-    def on_close():
-        limit_manager.save_state()
-        app.destroy()
-
-    CTkButton(app, text="Close", command=on_close, font=("Trebuchet MS", 16),
-              fg_color="#FD3434", hover_color="#E90000", text_color="black").pack(pady=10)
+    CTkButton(frame, text="Close", command=lambda: [limit_manager.save_state(), app.destroy()],
+              font=text_font, fg_color="#FD3434", hover_color="#E90000", text_color="black", width=200).pack(pady=20)
 
     app.mainloop()
+
 
 if __name__ == "__main__":
     launch_gui()

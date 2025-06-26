@@ -53,4 +53,4 @@ data = {
 with open("../fe_military.pkl", "wb") as f:
     pickle.dump(data, f)
 
-print("[SERVER] Encrypted data saved to ../fe_military.pkl")
+print("[SERVER] Data encrypted and saved to ../fe_data.pkl")
