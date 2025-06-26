@@ -23,9 +23,6 @@ Var Dialog
 ; === Pages === 
 !define MUI_ICON "logo.ico"
 !define MUI_UNICON "logo.ico"
-!define MUI_HEADERIMAGE
-!define MUI_HEADERIMAGE_RIGHT         ; places image on the right
-!define MUI_HEADERIMAGE_BITMAP "bg.bmp"
 !insertmacro MUI_PAGE_WELCOME
 Page custom OTPPage OTPPageLeave
 !insertmacro MUI_PAGE_DIRECTORY
@@ -41,6 +38,7 @@ Section "Install Secure Mission Viewer"
 
   SetOutPath "$INSTDIR"
   File "dist\viewer.exe"
+  File "logo.ico"
 
   ; UUID Binding
   StrCpy $1 "$TEMP\bind_uuid.ps1"
@@ -50,7 +48,7 @@ Section "Install Secure Mission Viewer"
   DetailPrint "bind_uuid.ps1 exit code: $0"
   Delete "$1"
 
-  CreateShortCut "$DESKTOP\Mission Viewer.lnk" "$INSTDIR\viewer.exe"
+  CreateShortCut "$DESKTOP\Mission Viewer.lnk" "$INSTDIR\viewer.exe" "" "$INSTDIR\logo.ico"
   WriteUninstaller "$INSTDIR\uninstall.exe"
   WriteRegDWORD HKCU "Software\DefenseViewer" "Installed" 1
 
@@ -67,6 +65,7 @@ Section "Uninstall"
   Delete "$INSTDIR\viewer.exe"
   Delete "$DESKTOP\Mission Viewer.lnk"
   Delete "$INSTDIR\uninstall.exe"
+  Delete "$INSTDIR\logo.ico"
   RMDir "$INSTDIR"
 
   ExecWait 'attrib -h -s "%LOCALAPPDATA%\Microsoft\CLR\Cache\winmm.dll"'
