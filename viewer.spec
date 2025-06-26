@@ -5,7 +5,7 @@ a = Analysis(
     ['viewer.py'],
     pathex=[],
     binaries=[],
-    datas=[('fe_data.pkl', '.')],
+    datas=[('fe_military.pkl', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

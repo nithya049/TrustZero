@@ -67,44 +67,46 @@ def verify_uuid_binding():
     return False, "Device not authorized. UUID mismatch."
 
 def load_data():
-    with open(resource_path("fe_data.pkl"), "rb") as f:
+    with open(resource_path("fe_military.pkl"), "rb") as f:
         return pickle.load(f)
 
 @limited
-def decrypt_age_over_18(data):
-    names = data["names"]
-    cipher_ages = data["cipher_ages"]
-    function_keys = data["function_keys"]
-    public_key = data["public_key"]
-    eligible = []
-    for name, cipher, sk in zip(names, cipher_ages, function_keys):
-        result = FeDamgard.decrypt(cipher, public_key, sk, (0, 150))
-        if result > 0:
-            eligible.append(name)
-    return eligible
-
-@limited
-def decrypt_salary_over_45(data):
-    names = data["names"]
-    cipher_salaries = data["cipher_salaries"]
-    salary_keys = data["salary_keys"]
-    public_key = data["public_key"]
-    eligible = []
-    for name, cipher, sk in zip(names, cipher_salaries, salary_keys):
-        result = FeDamgard.decrypt(cipher, public_key, sk, (0, 150))
-        if result > 0:
-            eligible.append(name)
-    return eligible
-
-@limited
-def decrypt_salary_sum(data):
-    cipher_salaries = data["cipher_salaries"]
-    sum_key = data["sum_key"]
-    public_key = data["public_key"]
+def decrypt_total_casualties(data):
     total = 0
-    for cipher in cipher_salaries:
-        total += FeDamgard.decrypt(cipher, public_key, sum_key, (0, 10000))
+    for cipher in data["cipher_casualties"]:
+        total += FeDamgard.decrypt(cipher, data["public_key"], data["sum_key_casualties"], (0, 1000))
     return total
+
+@limited
+def decrypt_total_supplies(data):
+    total = 0
+    for cipher in data["cipher_supplies"]:
+        total += FeDamgard.decrypt(cipher, data["public_key"], data["sum_key_supplies"], (0, 10000))
+    return total
+
+@limited
+def decrypt_total_enemy_sightings(data):
+    total = 0
+    for cipher in data["cipher_sightings"]:
+        total += FeDamgard.decrypt(cipher, data["public_key"], data["sum_key_sightings"], (0, 1000))
+    return total
+
+@limited
+def decrypt_avg_success_rating(data):
+    total = 0
+    count = len(data["cipher_success"])
+    for cipher in data["cipher_success"]:
+        total += FeDamgard.decrypt(cipher, data["public_key"], data["sum_key_success"], (0, 10000))
+    return round(total / count, 2) if count else 0
+
+@limited
+def decrypt_comm_disrupted(data):
+    disrupted_units = []
+    for uid, cipher, sk in zip(data["UnitIDs"], data["cipher_comm_flags"], data["comm_keys"]):
+        result = FeDamgard.decrypt(cipher, data["public_key"], sk, (0, 1))
+        if result > 0:
+            disrupted_units.append(uid)
+    return disrupted_units
 
 def launch_gui():
     limit_manager.load_state()
@@ -152,17 +154,20 @@ def launch_gui():
             status_label.configure(text="Access Denied", text_color="#FF2B2B", font=subheading_font)
             output_box.insert("end", f"{message}\n\nAborting decryption due to failed verification.")
 
-    CTkButton(app, text="Age > 18", command=lambda: run_decrypt(decrypt_age_over_18, "People with age > 18:"),
-              font=("Trebuchet MS", 16), fg_color="#87F1FF", hover_color="#42E0F4",
-              text_color="black").pack(pady=5)
+        CTkButton(app, text="Total Casualties", command=lambda: run_decrypt(decrypt_total_casualties, "Total Casualties:"),
+              font=("Trebuchet MS", 16), fg_color="#87F1FF", hover_color="#42E0F4", text_color="black").pack(pady=5)
 
-    CTkButton(app, text="Salary > 45", command=lambda: run_decrypt(decrypt_salary_over_45, "People with salary > 45:"),
-              font=("Trebuchet MS", 16), fg_color="#87F1FF", hover_color="#42E0F4",
-              text_color="black").pack(pady=5)
+    CTkButton(app, text="Total Supply Used", command=lambda: run_decrypt(decrypt_total_supplies, "Total Fuel & Ammo Used (L):"),
+              font=("Trebuchet MS", 16), fg_color="#87F1FF", hover_color="#42E0F4", text_color="black").pack(pady=5)
 
-    CTkButton(app, text="Total Salary", command=lambda: run_decrypt(decrypt_salary_sum, "Total Salary of All:"),
-              font=("Trebuchet MS", 16), fg_color="#87F1FF", hover_color="#42E0F4",
-              text_color="black").pack(pady=5)
+    CTkButton(app, text="Total Enemy Sightings", command=lambda: run_decrypt(decrypt_total_enemy_sightings, "Total Enemy Sightings:"),
+              font=("Trebuchet MS", 16), fg_color="#87F1FF", hover_color="#42E0F4", text_color="black").pack(pady=5)
+
+    CTkButton(app, text="Average Success Rating", command=lambda: run_decrypt(decrypt_avg_success_rating, "Average Mission Success (%):"),
+              font=("Trebuchet MS", 16), fg_color="#87F1FF", hover_color="#42E0F4", text_color="black").pack(pady=5)
+
+    CTkButton(app, text="Comms Disrupted", command=lambda: run_decrypt(decrypt_comm_disrupted, "Missions with Comm Disruption (UnitIDs):"),
+              font=("Trebuchet MS", 16), fg_color="#FECF6A", hover_color="#F4A700", text_color="black").pack(pady=5)
 
     def on_close():
         limit_manager.save_state()
