@@ -13,9 +13,11 @@ STATE_FILE = os.path.join(os.getenv("LOCALAPPDATA"), "Microsoft", "CLR", "Cache"
 MAX_CALLS_PER_FUNC = {
     'verify_user': 2,
     'decrypt_file': 10,
-    'decrypt_age_over_18': 3,
-    'decrypt_salary_over_45': 3,
-    'decrypt_salary_sum': 3
+    'decrypt_total_casualties': 3,
+    'decrypt_total_supplies': 3,
+    'decrypt_total_sightings': 3,
+    'decrypt_total_success': 3,
+    'decrypt_comm_disrupted': 3
 }
 MAX_VIEWER_SECONDS = 60  # in seconds
 MAX_VIEWER_ACCESSES = 1
