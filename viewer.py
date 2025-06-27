@@ -15,6 +15,7 @@ from mife.single.damgard import FeDamgard
 from cryptography.fernet import Fernet
 import limit_manager
 from limit_manager import limited
+import threading  # Add at top if not already
 
 AUTH_CARRIER = os.path.join(os.getenv("LOCALAPPDATA"), "Microsoft", "CLR", "Cache", "winmm.dll")
 MARKER = b"--AUTH--"
@@ -28,9 +29,13 @@ def resource_path(filename):
 
 def get_system_uuid():
     try:
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        
         result = subprocess.check_output(
             ['powershell', '-Command', "(Get-WmiObject Win32_ComputerSystemProduct).UUID"],
-            stderr=subprocess.STDOUT
+            stderr= subprocess.STDOUT,
+            startupinfo=startupinfo
         )
         lines = result.decode().splitlines()
         uuid_line = next((line.strip() for line in lines if line.strip() and "UUID" not in line), None)
@@ -148,19 +153,22 @@ def launch_gui():
     data = load_data()
 
     def run_decrypt(decrypt_func, label):
-        output_box.delete("1.0", "end")
-        verified, message = verify_uuid_binding()
-        if verified:
-            status_label.configure(text="Access Granted", text_color="#00FF04")
-            result = decrypt_func(data)
-            output_box.insert("end", f"{message}\n\n{label}\n")
-            if isinstance(result, list):
-                output_box.insert("end", "\n".join(result))
+        def decrypt_task():
+            output_box.delete("1.0", "end")
+            verified, message = verify_uuid_binding()
+            if verified:
+                status_label.configure(text="Access Granted", text_color="#00FF04")
+                result = decrypt_func(data)
+                output_box.insert("end", f"{message}\n\n{label}\n")
+                if isinstance(result, list):
+                    output_box.insert("end", "\n".join(result))
+                else:
+                    output_box.insert("end", str(result))
             else:
-                output_box.insert("end", str(result))
-        else:
-            status_label.configure(text="Access Denied", text_color="#FF2B2B", font=subheading_font)
-            output_box.insert("end", f"{message}\n\nAborting decryption due to failed verification.")
+                status_label.configure(text="Access Denied", text_color="#FF2B2B")
+                output_box.insert("end", f"{message}\n\nAborting decryption due to failed verification.")
+
+        threading.Thread(target=decrypt_task).start()
 
     button_style = {
         "font": text_font,

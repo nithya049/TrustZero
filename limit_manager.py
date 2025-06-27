@@ -17,7 +17,9 @@ MAX_CALLS_PER_FUNC = {
     'decrypt_total_supplies': 3,
     'decrypt_total_sightings': 3,
     'decrypt_total_success': 3,
-    'decrypt_comm_disrupted': 3
+    'decrypt_comm_disrupted': 3,
+    'decrypt_total_enemy_sightings': 3,
+    'decrypt_avg_success_rating': 3
 }
 MAX_VIEWER_SECONDS = 60  # in seconds
 MAX_VIEWER_ACCESSES = 1
