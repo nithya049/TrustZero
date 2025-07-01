@@ -1,9 +1,13 @@
 import pandas as pd
 import pickle
+import time
 from mife.single.damgard import FeDamgard
+from mife.single.selective.ddh import FeDDH
+
+start_time = time.time()
 
 df = pd.read_csv("mission_briefing.csv")
-key = FeDamgard.generate(1)
+key = FeDDH.generate(1)
 public_key = key.get_public_key()
 
 cipher_casualties = []
@@ -14,10 +18,12 @@ cipher_comm_flags = []
 comm_keys = []
 
 sum_vector = [1]
-sum_key_casualties = FeDamgard.keygen(sum_vector, key)
-sum_key_supplies = FeDamgard.keygen(sum_vector, key)
-sum_key_sightings = FeDamgard.keygen(sum_vector, key)
-sum_key_success = FeDamgard.keygen(sum_vector, key)
+sum_key_casualties = FeDDH.keygen(sum_vector, key)
+sum_key_supplies = FeDDH.keygen(sum_vector, key)
+sum_key_sightings = FeDDH.keygen(sum_vector, key)
+sum_key_success = FeDDH.keygen(sum_vector, key)
+
+encryption_start = time.time()
 
 for i in range(len(df)):
     casualties = [int(df.loc[i, "Casualties"])]
@@ -26,14 +32,16 @@ for i in range(len(df)):
     success = [int(df.loc[i, "SuccessRating"])]
     comm_disrupted = 1 if df.loc[i, "CommDisrupted"].strip().lower() == "yes" else 0
 
-    cipher_casualties.append(FeDamgard.encrypt(casualties, key))
-    cipher_supplies.append(FeDamgard.encrypt(supply, key))
-    cipher_sightings.append(FeDamgard.encrypt(sightings, key))
-    cipher_success.append(FeDamgard.encrypt(success, key))
+    cipher_casualties.append(FeDDH.encrypt(casualties, key))
+    cipher_supplies.append(FeDDH.encrypt(supply, key))
+    cipher_sightings.append(FeDDH.encrypt(sightings, key))
+    cipher_success.append(FeDDH.encrypt(success, key))
 
-    cipher_comm_flags.append(FeDamgard.encrypt([comm_disrupted], key))
-    sk = FeDamgard.keygen([1 if comm_disrupted else 0], key)
+    cipher_comm_flags.append(FeDDH.encrypt([comm_disrupted], key))
+    sk = FeDDH.keygen([1 if comm_disrupted else 0], key)
     comm_keys.append(sk)
+
+encryption_end = time.time()
 
 data = {
     "UnitIDs": df["UnitID"].tolist(),
@@ -53,4 +61,8 @@ data = {
 with open("../fe_military.pkl", "wb") as f:
     pickle.dump(data, f)
 
-print("[SERVER] Data encrypted and saved to ../fe_data.pkl")
+end_time = time.time()
+
+print("[SERVER] Data encrypted and saved to ../fe_military.pkl")
+print(f"[TIMING] Total time: {end_time - start_time:.4f} seconds")
+print(f"[TIMING] Encryption loop time: {encryption_end - encryption_start:.4f} seconds")

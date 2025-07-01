@@ -13,6 +13,7 @@ from tkinter import messagebox
 from pathlib import Path
 from mife.single.damgard import FeDamgard
 from cryptography.fernet import Fernet
+from mife.single.selective.ddh import FeDDH
 import limit_manager
 from limit_manager import limited
 import threading  # Add at top if not already
@@ -79,21 +80,21 @@ def load_data():
 def decrypt_total_casualties(data):
     total = 0
     for cipher in data["cipher_casualties"]:
-        total += FeDamgard.decrypt(cipher, data["public_key"], data["sum_key_casualties"], (0, 1000))
+        total += FeDDH.decrypt(cipher, data["public_key"], data["sum_key_casualties"], (0, 1000))
     return total
 
 @limited
 def decrypt_total_supplies(data):
     total = 0
     for cipher in data["cipher_supplies"]:
-        total += FeDamgard.decrypt(cipher, data["public_key"], data["sum_key_supplies"], (0, 10000))
+        total += FeDDH.decrypt(cipher, data["public_key"], data["sum_key_supplies"], (0, 10000))
     return total
 
 @limited
 def decrypt_total_enemy_sightings(data):
     total = 0
     for cipher in data["cipher_sightings"]:
-        total += FeDamgard.decrypt(cipher, data["public_key"], data["sum_key_sightings"], (0, 1000))
+        total += FeDDH.decrypt(cipher, data["public_key"], data["sum_key_sightings"], (0, 1000))
     return total
 
 @limited
@@ -101,14 +102,14 @@ def decrypt_avg_success_rating(data):
     total = 0
     count = len(data["cipher_success"])
     for cipher in data["cipher_success"]:
-        total += FeDamgard.decrypt(cipher, data["public_key"], data["sum_key_success"], (0, 10000))
+        total += FeDDH.decrypt(cipher, data["public_key"], data["sum_key_success"], (0, 10000))
     return round(total / count, 2) if count else 0
 
 @limited
 def decrypt_comm_disrupted(data):
     disrupted_units = []
     for uid, cipher, sk in zip(data["UnitIDs"], data["cipher_comm_flags"], data["comm_keys"]):
-        result = FeDamgard.decrypt(cipher, data["public_key"], sk, (0, 1))
+        result = FeDDH.decrypt(cipher, data["public_key"], sk, (0, 1))
         if result > 0:
             disrupted_units.append(uid)
     return disrupted_units
@@ -158,17 +159,26 @@ def launch_gui():
             verified, message = verify_uuid_binding()
             if verified:
                 status_label.configure(text="Access Granted", text_color="#00FF04")
+
+                import time  # You can move this to the top if you prefer
+                start_time = time.time()
                 result = decrypt_func(data)
+                end_time = time.time()
+                elapsed = end_time - start_time
+
                 output_box.insert("end", f"{message}\n\n{label}\n")
                 if isinstance(result, list):
                     output_box.insert("end", "\n".join(result))
                 else:
                     output_box.insert("end", str(result))
+                output_box.insert("end", f"\n\nTime Taken: {elapsed:.4f} seconds")
             else:
                 status_label.configure(text="Access Denied", text_color="#FF2B2B")
                 output_box.insert("end", f"{message}\n\nAborting decryption due to failed verification.")
 
         threading.Thread(target=decrypt_task).start()
+
+
 
     button_style = {
         "font": text_font,
