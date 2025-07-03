@@ -2,6 +2,7 @@ import sys
 import requests
 import subprocess
 
+
 def get_uuid():
     try:
         result = subprocess.check_output([

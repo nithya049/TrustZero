@@ -137,12 +137,16 @@
       </form>
 
       {% if token %}
-        <p><strong>Your token:</strong> {{ token }}</p>
-        <p>Use this token with your installer. It can only be used once and will bind to your device.</p>
+        <p><strong>Success!</strong></p>
+        <p>OTP sent to your mail. It can only be used once and will bind to your device.</p>
       {% endif %}
 
       {% if error %}
         <p class="error">{{ error }}</p>
+      {% endif %}
+
+      {% if denied %}
+        <p class="error"> This email has already used its OTP token. Contact admin for help.</p>
       {% endif %}
     </div>
   </div>

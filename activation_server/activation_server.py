@@ -1,9 +1,15 @@
+# activation_server.py
 from flask import Flask, request, jsonify, render_template
 import os, json, random, string
+from email.message import EmailMessage
+import smtplib
 
 app = Flask(__name__)
 TOKENS_FILE = "tokens.json"
 APPROVED_EMAILS_FILE = "approved_emails.json"
+
+EMAIL_SENDER = "securetrustzero@gmail.com"
+EMAIL_PASSWORD = "ennx audy kpfi ihdl"
 
 def load_tokens():
     if not os.path.exists(TOKENS_FILE):
@@ -23,15 +29,38 @@ def load_approved_emails():
         return set(json.load(f))
 
 def generate_token():
-    return "".join(random.choices(string.ascii_uppercase + string.digits, k=4)) + "-" + \
-           "".join(random.choices(string.ascii_uppercase + string.digits, k=4))
+    return str(random.randint(100000, 999999))
+
+def send_otp_email(name, email_id, otp):
+    subject = "OTP for Secure Viewer Installation"
+    body = f"""Dear {name},
+
+Your One-Time Password (OTP) is: {otp}.
+
+Please enter this OTP during Secure Viewer installation.
+
+Team TrustZero"""
+
+    email = EmailMessage()
+    email['From'] = EMAIL_SENDER
+    email['To'] = email_id
+    email['Subject'] = subject
+    email.set_content(body)
+
+    with smtplib.SMTP(host='smtp.gmail.com', port=587) as smtp:
+        smtp.starttls()
+        smtp.login(EMAIL_SENDER, EMAIL_PASSWORD)
+        smtp.send_message(email)
 
 @app.route("/get_token", methods=["GET", "POST"])
 def get_token():
     token = None
     error = None
+    denied = False  # New flag for template
+
     if request.method == "POST":
         email = request.form["email"].strip().lower()
+        name = email.split("@")[0]
         approved = load_approved_emails()
 
         if email not in approved:
@@ -39,16 +68,23 @@ def get_token():
             return render_template("get_token.html", error=error)
 
         tokens = load_tokens()
+
         for t, entry in tokens.items():
             if entry["email"] == email:
+                if entry["used"]:
+                    denied = True
+                    return render_template("get_token.html", denied=denied)
                 token = t
                 break
         else:
-            token = generate_token()
+            token = ''.join(random.choices(string.digits, k=6))  # OTP
             tokens[token] = {"email": email, "uuid": None, "used": False}
             save_tokens(tokens)
+            send_otp_email(name, email, token)
 
-    return render_template("get_token.html", token=token, error=error)
+    return render_template("get_token.html", token=token, error=error, denied=denied)
+
+
 
 @app.route("/validate_token", methods=["POST"])
 def validate_token():
