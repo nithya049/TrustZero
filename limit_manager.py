@@ -23,7 +23,7 @@ MAX_CALLS_PER_FUNC = {
     'decrypt_total_enemy_sightings': 3,
     'decrypt_avg_success_rating': 3
 }
-MAX_VIEWER_SECONDS = 60  # in seconds
+MAX_VIEWER_SECONDS = 120  # in seconds
 MAX_VIEWER_ACCESSES = 1
 
 # Runtime State
@@ -31,7 +31,7 @@ FUNC_CALLS = {}
 START_TIME = time.time()
 viewer_access_count = 0
 
-# === State Management ===
+#State Management 
 
 def load_state():
     global FUNC_CALLS, viewer_access_count, START_TIME
@@ -111,7 +111,6 @@ def limited(func):
     def wrapper(*args, **kwargs):
         if FUNC_CALLS[name] >= MAX_CALLS_PER_FUNC.get(name, float('inf')):
             print(f"[BLOCKED] Function '{name}' call limit reached.")
-            corrupt_files()
             os._exit(1)
             return None
         FUNC_CALLS[name] += 1
@@ -119,12 +118,11 @@ def limited(func):
 
     return wrapper
 
-# === Viewer Access Control ===
+# Viewer Access Control 
 def handle_access():
     global viewer_access_count
     if viewer_access_count >= MAX_VIEWER_ACCESSES:
         print("[BLOCKED] Viewer access limit reached.")
-        corrupt_files()
         os._exit(1)
         return False
     viewer_access_count += 1

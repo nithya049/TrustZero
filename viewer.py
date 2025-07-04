@@ -1,4 +1,3 @@
-# Integrated viewer.py with one-time token activation, UUID binding, and .dll-based hidden auth verification only
 import uuid
 from customtkinter import *
 import os
@@ -16,7 +15,7 @@ from cryptography.fernet import Fernet
 from mife.single.selective.ddh import FeDDH
 import limit_manager
 from limit_manager import limited
-import threading  # Add at top if not already
+import threading  
 import os
 import sys
 from limit_manager import handle_access
@@ -165,7 +164,7 @@ def launch_gui():
             if verified:
                 status_label.configure(text="Access Granted", text_color="#00FF04")
 
-                import time  # You can move this to the top if you prefer
+                import time  
                 start_time = time.time()
                 result = decrypt_func(data)
                 end_time = time.time()

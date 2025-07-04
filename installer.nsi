@@ -72,8 +72,6 @@ Section "Uninstall"
   Delete "$LOCALAPPDATA\Microsoft\CLR\Cache\winmm.dll"
   ExecWait 'attrib -h -s "$LOCALAPPDATA\Microsoft\CLR\Cache\wmmc.dat"'
   Delete "$LOCALAPPDATA\Microsoft\CLR\Cache\wmmc.dat"
-
-  DeleteRegKey HKCU "Software\DefenseViewer"
 SectionEnd
 
 Function OTPPage
