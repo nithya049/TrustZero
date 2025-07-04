@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Secure Activation Portal</title>
+  <style>
+    body {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #1b1e1c;
+  background-image: url("{{ url_for('static', filename='bg.jpg') }}"); 
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  font-family: 'Courier New', Courier, monospace;
+  color: #d6d6d6;
+}
+    .background-blur {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      /* backdrop-filter: blur(5px); */
+      background: rgba(0,0,0,0.55); /*for dark overlay */
+      z-index: -1;
+    }
+
+    #terminal {
+      background-color: rgba(0, 0, 0, 0.7);
+      padding: 30px;
+      border-radius: 10px;
+      width: 600px;
+      height: 220px;
+      overflow: hidden;
+      box-shadow: 0 0 30px rgba(0, 255, 0, 0.2);
+      font-size: 14px;
+      line-height: 1.5;
+      color: #90ee90;
+      white-space: pre-wrap;
+    }
+
+    #form-container {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .container {
+      background-color: rgba(33, 36, 30, 0.95);
+      border: 1px solid #4a5035;
+      box-shadow: 0 0 20px rgba(100, 255, 100, 0.08);
+      padding: 40px;
+      border-radius: 12px;
+      width: 360px;
+      text-align: center;
+    }
+
+    h2 {
+      color: #90ee90;
+      font-size: 22px;
+      margin-bottom: 20px;
+      letter-spacing: 1px;
+      border-bottom: 1px solid #3a3f34;
+      padding-bottom: 10px;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    input[type="email"] {
+      padding: 12px;
+      border: none;
+      border-radius: 5px;
+      background-color: #2a2e27;
+      color: #e8e8e8;
+      font-size: 14px;
+      border: 1px solid #3d4236;
+    }
+
+    input[type="email"]::placeholder {
+      color: #888;
+    }
+
+    button {
+      background-color: #90ee90;
+      color: #1e241a;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #66e966;
+    }
+
+    p {
+      margin-top: 15px;
+      font-size: 14px;
+    }
+
+    strong {
+      color: #90ee90;
+      font-weight: bold;
+    }
+
+    .error {
+      color: #ff4c4c;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="background-blur"></div>
+
+  <!-- Terminal Intro Section -->
+  <div id="terminal"></div>
+
+  <!-- Actual Secure Form -->
+  <div id="form-container">
+    <div class="container">
+      <h2>SECURE ACCESS REQUEST</h2>
+      <form method="POST">
+        <input type="email" name="email" placeholder="you@example.gov" required>
+        <button type="submit">Get Token</button>
+      </form>
+
+      {% if token %}
+        <p><strong>Success!</strong></p>
+        <p>OTP sent to your mail. It can only be used once and will bind to your device.</p>
+      {% endif %}
+
+      {% if error %}
+        <p class="error">{{ error }}</p>
+      {% endif %}
+
+      {% if denied %}
+        <p class="error"> This email has already used its OTP token. Contact admin for help.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <script>
+    const terminal = document.getElementById("terminal");
+    const form = document.getElementById("form-container");
+
+    const lines = [
+      ">>> Initializing secure activation protocol...",
+      ">>> Connecting to authorization server...",
+      ">>> Verifying client information...",
+      ">>> Encrypting session channel...",
+      ">>> Session established.",
+      ">>> Launching access interface..."
+    ];
+
+    let i = 0;
+
+    function typeLine() {
+      if (i < lines.length) {
+        terminal.innerHTML += lines[i] + "\n";
+        i++;
+        setTimeout(typeLine, 900);
+      } else {
+        setTimeout(() => {
+          terminal.style.display = "none";
+          form.style.display = "flex";
+        }, 800);
+      }
+    }
+
+    window.onload = typeLine;
+  </script>
+</body>
+</html>
