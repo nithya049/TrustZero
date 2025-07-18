@@ -84,21 +84,21 @@ def load_data():
 def decrypt_total_casualties(data):
     total = 0
     for cipher in data["cipher_casualties"]:
-        total += FeDDH.decrypt(cipher, data["public_key"], data["sum_key_casualties"], (0, 1000))
+        total += FeDDH.decrypt(cipher, data["public_key"], data["sum_key_casualties"], (0, 1000000))
     return total
 
 @limited
 def decrypt_total_supplies(data):
     total = 0
     for cipher in data["cipher_supplies"]:
-        total += FeDDH.decrypt(cipher, data["public_key"], data["sum_key_supplies"], (0, 10000))
+        total += FeDDH.decrypt(cipher, data["public_key"], data["sum_key_supplies"], (0, 10000000))
     return total
 
 @limited
 def decrypt_total_enemy_sightings(data):
     total = 0
     for cipher in data["cipher_sightings"]:
-        total += FeDDH.decrypt(cipher, data["public_key"], data["sum_key_sightings"], (0, 1000))
+        total += FeDDH.decrypt(cipher, data["public_key"], data["sum_key_sightings"], (0, 1000000))
     return total
 
 @limited
@@ -106,17 +106,17 @@ def decrypt_avg_success_rating(data):
     total = 0
     count = len(data["cipher_success"])
     for cipher in data["cipher_success"]:
-        total += FeDDH.decrypt(cipher, data["public_key"], data["sum_key_success"], (0, 10000))
+        total += FeDDH.decrypt(cipher, data["public_key"], data["sum_key_success"], (0, 10000000))
     return round(total / count, 2) if count else 0
 
-@limited
-def decrypt_comm_disrupted(data):
-    disrupted_units = []
-    for uid, cipher, sk in zip(data["UnitIDs"], data["cipher_comm_flags"], data["comm_keys"]):
-        result = FeDDH.decrypt(cipher, data["public_key"], sk, (0, 1))
-        if result > 0:
-            disrupted_units.append(uid)
-    return disrupted_units
+# @limited
+# def decrypt_comm_disrupted(data):
+#     disrupted_units = []
+#     for uid, cipher, sk in zip(data["UnitIDs"], data["cipher_comm_flags"], data["comm_keys"]):
+#         result = FeDDH.decrypt(cipher, data["public_key"], sk, (0, 1))
+#         if result > 0:
+#             disrupted_units.append(uid)
+#     return disrupted_units
 
 def launch_gui():
     limit_manager.load_state()
@@ -197,8 +197,8 @@ def launch_gui():
     CTkButton(frame, text="Total Supply Used", command=lambda: run_decrypt(decrypt_total_supplies, "Total Fuel & Ammo Used (L):"), **button_style).pack(pady=5)
     CTkButton(frame, text="Total Enemy Sightings", command=lambda: run_decrypt(decrypt_total_enemy_sightings, "Total Enemy Sightings:"), **button_style).pack(pady=5)
     CTkButton(frame, text="Average Success Rating", command=lambda: run_decrypt(decrypt_avg_success_rating, "Average Mission Success (%):"), **button_style).pack(pady=5)
-    CTkButton(frame, text="Comms Disrupted", command=lambda: run_decrypt(decrypt_comm_disrupted, "Missions with Comm Disruption (UnitIDs):"),
-              font=text_font, fg_color="#FECF6A", hover_color="#F4A700", text_color="#1e241a", width=200).pack(pady=5)
+    # CTkButton(frame, text="Comms Disrupted", command=lambda: run_decrypt(decrypt_comm_disrupted, "Missions with Comm Disruption (UnitIDs):"),
+    #           font=text_font, fg_color="#FECF6A", hover_color="#F4A700", text_color="#1e241a", width=200).pack(pady=5)
 
     CTkButton(frame, text="Close", command=lambda: [limit_manager.save_state(), app.destroy()],
               font=text_font, fg_color="#FD3434", hover_color="#E90000", text_color="black", width=200).pack(pady=20)
